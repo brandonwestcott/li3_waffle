@@ -1,8 +1,8 @@
 <?php
 
-namespace li3_features\extensions\helper;
+namespace li3_waffle\extensions\helper;
 
-use li3_features\extensions\Features;
+use li3_waffle\extensions\FeatureManager;
 
 /**
  * # Feature Helper
@@ -19,7 +19,7 @@ use li3_features\extensions\Features;
 class Feature extends \lithium\template\Helper {
 
 	public function enabled($name){
-		return Features::enabled($name);
+		return FeatureManager::enabled($name);
 	}
 
 }

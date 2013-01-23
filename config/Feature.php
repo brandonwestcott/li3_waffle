@@ -1,6 +1,6 @@
 <?php
 
-namespace li3_features\config;
+namespace li3_waffle\config;
 
 use lithium\core\Libraries;
 use lithium\template\View;
@@ -36,7 +36,6 @@ class Feature extends \lithium\core\Object {
 		return $this->_name;
 	}
 
-
 	/**
 	 * Check to see if a feature is enabled
 	 * 
@@ -70,12 +69,45 @@ class Feature extends \lithium\core\Object {
 	*
 	* For help in formatting _swapView method exists 
 	*
+	* @see FeatureManager::_filterViews();	
 	* @see lithium\template\View::_step()
 	*/
 	public function viewFilters(){
 		return array();
 	}
 
+	/**
+	* Manages the filtering of the methods on Models or full Models
+	* Should return an array of full namespaced source to target methods
+	*
+	* For example, the following would replace 
+	* blog->title() to blog->titleFeature1()
+	* and blog->name to blog->nameFeature1
+	* {{{
+	* return array(
+	* 	'app\models\Blog::title' => 'app\models\Blog::titleFeature1',
+	* 	'app\models\Blog::name' => 'app\models\Blog::nameFeature2',
+	* );
+	* }}}
+	*
+	* If you want to be really naughty, you could swap an entire model
+	* Note, that this wouldn't return the new namespaced model for ->model()
+	* but thats exactly what we want - treat our new model like an old model
+	* 
+	* For example, lets proxy all of Blog to BlogFeature model
+	* {{{
+	* return array(
+	* 	'app\models\Blog' => 'app\models\BlogFeature',
+	* );
+	* }}}
+	*
+	* @see FeatureManager::_attachFilteredMethods();
+	* @see FeatureManager::replaceMethod();
+	* @see lithium\template\View::_step()
+	*/
+	public function methodFilters(){
+		return array();
+	}
 
 	/**
 	 * Takes array of key => array(from => to) and creates the array needed for viewFilters
