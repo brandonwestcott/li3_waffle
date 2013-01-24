@@ -18,8 +18,16 @@ use li3_waffle\extensions\FeatureManager;
  */
 class Feature extends \lithium\template\Helper {
 
+	/**
+	 * Determines if the given feature is enabled.
+	 *
+	 * @param  string $name Name of the feature
+	 * @return bool
+	 */
 	public function enabled($name){
 		return FeatureManager::enabled($name);
 	}
 
 }
+
+?>
