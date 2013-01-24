@@ -11,7 +11,7 @@ class FeatureManager extends \lithium\core\StaticObject {
 	protected static $_config = array(
 		'paths' => '{:library}\config\features\{:name}Feature',
 		'viewFiltering' => true,
-		'methodFiltering' => true
+		'modelFiltering' => true
 	);
 
 	protected static $_classes = array(
@@ -19,7 +19,7 @@ class FeatureManager extends \lithium\core\StaticObject {
 		'Record'   => 'li3_waffle\extensions\data\entity\Record',
 	);
 
-	protected static $_replacedMethods = array();
+	protected static $_replacedModels = array();
 
 	public static function init($request = null){
 		self::$_config = Libraries::get('li3_waffle') + self::$_config;
@@ -51,8 +51,8 @@ class FeatureManager extends \lithium\core\StaticObject {
 			self::_filterViews();			
 		}
 
-		if(self::$_config['methodFiltering'] == true){
-			self::_attachFilteredMethods();			
+		if(self::$_config['modelFiltering'] == true){
+			self::_attachFilteredModels();			
 		}
 	}
 
@@ -80,41 +80,41 @@ class FeatureManager extends \lithium\core\StaticObject {
 	}
 
 	/**
-	 * Check to see if a method replacement exists for a give method
+	 * Check to see if a model replacement exists for a given model or model::method
 	 * 
 	 * @param string $source - Model::method syntax for checking/storing filtered methods
 	 * @param string $target - Model::method syntax for storage of target method
-	 * @return return string - $target Model::method
+	 * @return return string - $target Model::method or simply Model
 	 */
-	public static function replaceMethod($source = null, $target = null){
+	public static function replaceModel($source = null, $target = null){
 		if(!empty($target)){
-			self::$_replacedMethods[$source] = $target;
+			self::$_replacedModels[$source] = $target;
 		}
-		if(isset(self::$_replacedMethods[$source])){
-			return self::$_replacedMethods[$source];
+		if(isset(self::$_replacedModels[$source])){
+			return self::$_replacedModels[$source];
 		} else {
 			list($class) = explode('::', $source);
-			if(isset(self::$_replacedMethods[$class])){
-				return self::$_replacedMethods[$class];		
+			if(isset(self::$_replacedModels[$class])){
+				return self::$_replacedModels[$class];		
 			}
 		}
 		return null;
 	}
 
 	/**
-	 * Function to grab all methodFilters from each feature and apply filter to entity
+	 * Function to grab all modelFilters from each feature and apply filter to entity
 	 */
-	protected static function _attachFilteredMethods(){
+	protected static function _attachFilteredModels(){
 		$params['classes'] = self::$_classes;
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
 			$features = $self::enabled();
 			$count = 0;
 			foreach($features as $feature){
-				$filters = $feature->methodFilters();
+				$filters = $feature->modelFilters();
 				if(!empty($filters)){
 					$count++;
 					foreach($filters as $source => $target){
-						$self::replaceMethod($source, $target);
+						$self::replaceModel($source, $target);
 					}
 				}
 			}

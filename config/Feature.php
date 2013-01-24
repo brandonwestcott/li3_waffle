@@ -101,11 +101,11 @@ class Feature extends \lithium\core\Object {
 	* );
 	* }}}
 	*
-	* @see FeatureManager::_attachFilteredMethods();
-	* @see FeatureManager::replaceMethod();
+	* @see FeatureManager::_attachFilteredModels();
+	* @see FeatureManager::replaceModel();
 	* @see lithium\template\View::_step()
 	*/
-	public function methodFilters(){
+	public function modelFilters(){
 		return array();
 	}
 
