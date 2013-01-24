@@ -70,7 +70,6 @@ class Feature extends \lithium\core\Object {
 	* For help in formatting _swapView method exists 
 	*
 	* @see FeatureManager::_filterViews();	
-	* @see lithium\template\View::_step()
 	*/
 	public function viewFilters(){
 		return array();
@@ -103,11 +102,27 @@ class Feature extends \lithium\core\Object {
 	*
 	* @see FeatureManager::_attachFilteredModels();
 	* @see FeatureManager::replaceModel();
-	* @see lithium\template\View::_step()
 	*/
 	public function modelFilters(){
 		return array();
 	}
+
+	/**
+	* Manages the filtering/replacement of the Helpers
+	* Should return an array of full namespaced source to target model
+	* 
+	* For example, lets proxy replace Lists helper with ListsFeature
+	* {{{
+	* return array(
+	* 	'app\extensions\helper\Lists' => 'app\extensions\helper\ListsFeature',
+	* );
+	* }}}
+	*
+	* @see FeatureManager::_attachFilteredHelpers();
+	*/
+	public function helperFilters(){
+		return array();
+	}	
 
 	/**
 	 * Takes array of key => array(from => to) and creates the array needed for viewFilters

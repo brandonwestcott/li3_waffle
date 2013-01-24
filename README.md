@@ -181,6 +181,73 @@ The possibilities are really endless. What is great here, is that most of #li3 m
 
 Again though some code duplication may happen, this allows you to add this feature flag as unobtrusively as possible. Calls like `Blogs::first()` and `Blogs::count()` continue to work. Imagine if your feature required a different model and you had to wrap every `Blogs::find()` in a feature if block to load `BlogsFeature` instead. Ewwwwwwww....
 
+### Helper filtering:
+Similar to filtering models with `modelFilters()`, you can define `helperFilters()` in your feature and return a multi-dimensional array where the `key` is the fully namespaced source helper class and the `value` is the fully namespace target helper. Note: this is full class replacement here, not indivudal method replacement.
+
+~~~ php
+<?php
+namespace app\config\features;
+
+class AwesomeFeature extends li3_waffle\config\Feature {
+
+	protected $_name = 'awesome';
+
+	public function helperFilters(){
+		return array(
+			'app\extensions\helper\Lists' => 'app\extensions\helper\ListsFeature',
+		);
+	}
+
+}
+?>
+~~~
+
+As you might expect by now, anytime you call `$this->lists->` in your view, you will instead get passed to `ListsFeature`
+
+Here is an example, starting with your original lists helper
+~~~ php
+<?php
+namespace app\extensions\helper;
+
+class Lists extends \lithium\template\Helper {
+
+	public function five($entity){
+		return implode(', ', range(1, 5));
+	}
+
+}
+?>
+~~~
+
+Now we create our feature helper to overwrite functionality
+~~~ php
+<?php
+namespace app\extensions\helper;
+
+class ListsFeature extends Lists {
+
+	public function five($entity){
+		return 'I, II, III, IV, V';
+	}
+
+}
+?>
+~~~
+
+Now, as you might expect, nothing in our view has to change!
+~~~ php
+<p><?=$this->lists->five()?></p>
+~~~
+
+Given this feature is enabled, the output would be
+~~~ php
+<p>I, II, III, IV, V</p>
+~~~
+
+Again, this allows you to add feature specific logic to your helpers without having to modify your views.
+
+Note: I have the desire to implement helpers like models and allow method specific filtering. However, li3 meta magic does not extend into the helper implemention. It is possible to implement, but it requires a delegate class to be in front of all helpers. Though I've used this approach in some development only plugins, it seems a bit more obtrusive than desired. Feedback on this would be appreciated!
+
 ### View filtering:
 So admittedly, this isn't as pretty as it could be yet. Surprisingly path matching with different view renderers was extremely hard. But for now, its livable.
 
@@ -246,11 +313,6 @@ Note: `_swapView()` is simply a helper function to make the formatting of this n
 
 The goal here is to get `array('views/blogs/show.html.php' => 'views/posts/show.html.php')` working. The initial attempts were futile, but I really hate the way you must define it now.
 
-
-### Helper filtering:
-Almost there, expecting this will be full helper replacement like the models above, not method specific replacement. The reason is that in order to filter all methods in a helper, you would have to create a `HelperDelagate` type class with all its stuff delegated to the real helper.
-
-
 ## Configuring
 In short, if `$_config['enabled'] = true`, the feature is enabled. See comment 3 below of where I expect this to go.
 
@@ -265,6 +327,7 @@ Libraries::add('li3_waffle', array(
 	'paths' => '{:library}\config\features\{:name}Feature', // paths to your feature
 	'viewFiltering' => true, // toggle viewFiltering globally
 	'modelFiltering' => true // toggle modelFiltering globally
+	'helperFiltering' => true // toggle modelFiltering globally
 	'classes' => array(
 		'Document' => 'li3_waffle\extensions\data\entity\Document',
 		'Record'   => 'li3_waffle\extensions\data\entity\Record',
@@ -275,8 +338,8 @@ Libraries::add('li3_waffle', array(
 ~~~
 
 ## Plans for the future
-1. Add helper overwriting
-2. Fix the view definition, definitely not elegant as is.
+1. Fix the view definition, definitely not elegant as is.
+2. Add more test coverage
 3. Add robust config to `li3_waffle\config\Feature.php` class for understanding of query params, environments, hostnames, server ips, remote ips, time of day, percentage of population. Of course, as a developer you can overwrite anything in that class and customize it as much as you want. However, it would be nice to have an small dsl for the main things.
 4. So eventually, I would like to create an `li3_waffle_admin` plugin for managing these features. E.g. your product team could login and enable these features based on the options for your specific needs. I attempted to set up the options in `Feature.php` class to allow these items to come from a DB, so we shall see.
 
