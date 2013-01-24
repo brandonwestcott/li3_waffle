@@ -249,12 +249,11 @@ Again, this allows you to add feature specific logic to your helpers without hav
 Note: I have the desire to implement helpers like models and allow method specific filtering. However, li3 meta magic does not extend into the helper implemention. It is possible to implement, but it requires a delegate class to be in front of all helpers. Though I've used this approach in some development only plugins, it seems a bit more obtrusive than desired. Feedback on this would be appreciated!
 
 ### View filtering:
-So admittedly, this isn't as pretty as it could be yet. Surprisingly path matching with different view renderers was extremely hard. But for now, its livable.
+Views are even more magical, for better or for worse.
 
-Like `modelFilters()`, you define `viewFilters()` and return an array. However this array is a bit more robust. See `lithium\template\View` for params explanation.
-
-Here we want to replace `views/blogs/show.html.php` with `views/blogs/show_awesome.html.php`.
-
+In short, `_pathsManipuation()` prepends feature specific directories to lithiums path loading. Code definitely speaks louder than words here:
+	 
+First, return true in `viewFilters()`. This enables view filtering per feature
 ~~~ php
 <?php
 
@@ -265,53 +264,65 @@ class AwesomeFeature extends li3_waffle\config\Feature {
 	protected $_name = 'awesome';
 
 	public function viewFilters(){
-		return array(
-			$this->_swapView(array(
-				'type' => 'html',
-				'controller' => 'blogs',
-				'template' => array('show' => 'show_awesome')
-			)),
-		);
+		return true;
 	}
 }
 ?>
 ~~~
 
-Here all we have to do is pass an array to swap view, with params that match those that get passed to `lithium\template\View`. Here we are wanting to match `type == html`, `controller == blogs`, and `template == show`. If the view that is being rendered matches these parameters, it will instead overwrite template with `show_awesome`, our feature specific view. In short, if value is an array, the first value will be use for the match, the second will be used for replacement. We could even move to a different controller view folder.
+Now, any `Media::type()` paths will get feature paths prepended for them. For a default li3 setup, this would create the following paths:
 
 ~~~ php
-<?php
+Array
+(
+    [template] => Array
+        (
+            [0] => {:library}/views/features/{:controller}/{:template}_awesome.{:type}.php
+            [1] => {:library}/views/{:controller}/{:template}.{:type}.php
+        )
 
-namespace app\config\features;
+    [layout] => Array
+        (
+            [0] => {:library}/views/features/{:controller}/{:layout}_awesome.{:type}.php
+            [1] => {:library}/views/{:controller}/{:layout}.{:type}.php
+        )
 
-class AwesomeFeature extends li3_waffle\config\Feature {
+    [element] => Array
+        (
+            [0] => {:library}/views/features/elements/{:template}_awesome.{:type}.php
+            [1] => {:library}/views/elements/{:template}.{:type}.php
+        )
 
-	protected $_name = 'awesome';
-
-	public function viewFilters(){
-		return array(
-			$this->_swapView(array(
-				'type' => 'html',
-				'controller' => array('blogs' => 'posts'),
-				'template' => 'show'
-			)),
-		);
-	}
-}
-?>
+)
 ~~~
 
-Here we end up rewriting `views/blogs/show.html.php` to `views/posts/show.html.php`.
+If you had another feature name `foo`, you would get the following:
+~~~ php
+Array
+(
+    [template] => Array
+        (
+            [0] => {:library}/views/features/{:controller}/{:template}_awesome.{:type}.php
+            [1] => {:library}/views/features/{:controller}/{:template}_foo.{:type}.php
+            [2] => {:library}/views/{:controller}/{:template}.{:type}.php
+        )
 
-Obviously, copying entire views would not keep your code DRY, so this approach is mostly applicable for switching out elements and small chunks of a view. As with the models, this allows you Feature specific logic to live independent from your app. Once you are ready to move a feature into the core, you simply remove your current view file and rename your feature file to the original.
+    [layout] => Array
+        (
+            [0] => {:library}/views/features/{:controller}/{:layout}_awesome.{:type}.php
+            [1] => {:library}/views/features/{:controller}/{:layout}_foo.{:type}.php
+            [2] => {:library}/views/{:controller}/{:layout}.{:type}.php
+        )
 
-~~~ bash
-rm views/blogs/show.html.php && mv views/blogs/show_awesome.html.php views/blogs/show.html.php
+    [element] => Array
+        (
+            [0] => {:library}/views/features/elements/{:template}_awesome.{:type}.php
+            [1] => {:library}/views/features/elements/{:template}_foo.{:type}.php
+            [2] => {:library}/views/elements/{:template}.{:type}.php
+        )
+
+)
 ~~~
-
-Note: `_swapView()` is simply a helper function to make the formatting of this nasty array a bit easier. See the docblock for `li3_waffle\config\Feature::viewFitlers()` to understand why this was warranted.
-
-The goal here is to get `array('views/blogs/show.html.php' => 'views/posts/show.html.php')` working. The initial attempts were futile, but I really hate the way you must define it now.
 
 ## Configuring
 In short, if `$_config['enabled'] = true`, the feature is enabled. See comment 3 below of where I expect this to go.

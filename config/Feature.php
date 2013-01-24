@@ -72,7 +72,7 @@ class Feature extends \lithium\core\Object {
 	* @see FeatureManager::_filterViews();	
 	*/
 	public function viewFilters(){
-		return array();
+		return false;
 	}
 
 	/**

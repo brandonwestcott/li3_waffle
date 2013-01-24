@@ -3,6 +3,7 @@
 namespace li3_waffle\extensions;
 
 use lithium\core\Libraries;
+use lithium\util\String;
 
 class FeatureManager extends \lithium\core\StaticObject {
 
@@ -178,43 +179,60 @@ class FeatureManager extends \lithium\core\StaticObject {
 		});
 	}
 
+	/**
+	 * Function for regex extending of Media::type() paths for feature specific views
+	 * By default, it takes the view path and changes /views/ to /views/features/ and
+	 * appends _featureName to template/layout
+	 * 
+	 * Eg  {:library}/views/{:controller}/{:template}.{:type}.php will generate 
+	 * {:library}/views/features/{:controller}/{:template}_featureName.{:type}.php
+	 */
+	protected static function _pathsManipuation($params = array()){
+		return static::_filter(__FUNCTION__, $params, function($self, $params) {
+			if(!empty($params['paths'])){
+				$params['paths'] = (array) $params['paths'];
+				$newPaths = array();
+				foreach($params['paths'] as $path){
+					foreach($params['featureNames'] as $feature){
+						$featurePath = preg_replace('/(\/views\/){1}(.*)\/(\{:template\}|\{:layout\}){1}(.*)/', '$1features/$2/$3_'.$feature.'$4', $path, 1, $replaced);
+						if($replaced > 0){
+							$newPaths[] = $featurePath;
+						}
+					}
+					$newPaths[] = $path;
+				}
+				return $newPaths;
+			}
+			return $params['paths'];
+		});
+	}
 
 	/**
-	 * Function to grab all viewFilters from each feature and apply filter to Renderer adapater to replace views based on feature
+	 * Function to prepend paths with feature specific paths to view.adapter __construct()
 	 *
 	 * @see lithium\core\Libraries::instance()
-	 * @see lithium\template\View::_step()
+	 * @see lithium\template\View
 	 */
 	protected static function _filterViews(){
-		return static::_filter(__FUNCTION__, array(), function($self, $params) {
-			$filterViews = array();
-			$features = $self::enabled();
-			foreach($features as $feature){
-				$filters = $feature->viewFilters();
-				if(!empty($filters)){
-					$filterViews += $filters;
-				}
+		$params['featureNames'] = array();
+		foreach(self::$_features as $name => $feature){
+			if($feature->enabled() && $feature->viewFilters()){
+				$params['featureNames'][] = $name;
 			}
-			if(!empty($filterViews)){
-				Libraries::applyFilter('instance', function($self, $params, $chain) use ($filterViews) {
+		}
+		return static::_filter(__FUNCTION__, $params, function($self, $params) {
+			if(!empty($params['featureNames'])){
+				$featureManager = $self;
+				$featureNames = $params['featureNames'];
+				Libraries::applyFilter('instance', function($self, $params, $chain) use ($featureManager, $featureNames) {
 					if($params['name'] == '\lithium\template\View'){
-						$view = $chain->next($self, $params, $chain);
-						$view->applyFilter('_step', function($self, $params, $chain) use ($filterViews) {
-							if(!(isset($params['params']['controller']) && $params['params']['controller'] == '_errors')){
-								foreach($filterViews as $filterSet){
-									if(count($filterSet) == 2 && is_array($filterSet[0]) && is_array($filterSet[1])){
-										if(array_intersect_key($params['params'], $filterSet[0]) == $filterSet[0]){
-											$params['params'] = $filterSet[1] + $params['params'];
-										}									
-									}
-								}
-							}
-							return $chain->next($self, $params, $chain);
-						});
-						return $view;
+						foreach($params['options']['paths'] as $type => $paths){
+							$params['options']['paths'][$type] = $featureManager::invokeMethod('_pathsManipuation', array(compact('paths', 'featureNames')));
+						}
+						return $chain->next($self, $params, $chain);
 					}
 					return $chain->next($self, $params, $chain);
-				});
+				});				
 			}
 		});
 	}
