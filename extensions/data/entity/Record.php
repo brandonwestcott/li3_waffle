@@ -14,7 +14,7 @@ class Record extends \lithium\data\entity\Record {
 
 	public function __call($method, $params) {
 		if ($model = $this->_model) {
-			$replaced = FeatureManager::replaceMethod($model.'::'.$method);
+			$replaced = FeatureManager::replaceModel($model.'::'.$method);
 			if(!empty($replaced) && $replaced = explode('::', $replaced)){
 				if(isset($replaced[1])){
 					$method = $replaced[1];

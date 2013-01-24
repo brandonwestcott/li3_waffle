@@ -71,8 +71,8 @@ Given that #li3 provides us with some awesome filtering and meta programming cap
 
 For an overview of methods you should use, see `li3_waffle\config\Feature` class.
 
-### Model method filtering:
-Simply define `methodFilters()` in your feature and return a multi-dimensional array where the `key` is the source method and the `value` is the target method.
+### Model filtering:
+Simply define `modelFilters()` in your feature and return a multi-dimensional array where the `key` is the source model::method and the `value` is the target model::method.
 
 ~~~ php
 <?php
@@ -82,7 +82,7 @@ class AwesomeFeature extends li3_waffle\config\Feature {
 
 	protected $_name = 'awesome';
 
-	public function methodFilters(){
+	public function modelFilters(){
 		return array(
 			'app\models\Blogs::title' => 'app\models\Blogs::titleAwesome'
 			'app\models\Blogs::name' => 'app\models\Blogs::nameAwesome'
@@ -144,7 +144,7 @@ class AwesomeFeature extends li3_waffle\config\Feature {
 
 	protected $_name = 'awesome';
 
-	public function methodFilters(){
+	public function modelFilters(){
 		return array(
 			'app\models\Blog' => 'app\models\BlogFeature'
 		);
@@ -184,7 +184,7 @@ Again though some code duplication may happen, this allows you to add this featu
 ### View filtering:
 So admittedly, this isn't as pretty as it could be yet. Surprisingly path matching with different view renderers was extremely hard. But for now, its livable.
 
-Like `methodFilters()`, you define `viewFilters()` and return an array. However this array is a bit more robust. See `lithium\template\View` for params explanation.
+Like `modelFilters()`, you define `viewFilters()` and return an array. However this array is a bit more robust. See `lithium\template\View` for params explanation.
 
 Here we want to replace `views/blogs/show.html.php` with `views/blogs/show_awesome.html.php`.
 
@@ -264,7 +264,7 @@ If you have custom Document/Record you, or a plugin is using, you will need to s
 Libraries::add('li3_waffle', array(
 	'paths' => '{:library}\config\features\{:name}Feature', // paths to your feature
 	'viewFiltering' => true, // toggle viewFiltering globally
-	'methodFiltering' => true // toggle methodFiltering globally
+	'modelFiltering' => true // toggle modelFiltering globally
 	'classes' => array(
 		'Document' => 'li3_waffle\extensions\data\entity\Document',
 		'Record'   => 'li3_waffle\extensions\data\entity\Record',
