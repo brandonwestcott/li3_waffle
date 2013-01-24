@@ -11,7 +11,8 @@ class FeatureManager extends \lithium\core\StaticObject {
 	protected static $_config = array(
 		'paths' => '{:library}\config\features\{:name}Feature',
 		'viewFiltering' => true,
-		'modelFiltering' => true
+		'modelFiltering' => true,
+		'helperFiltering' => true,
 	);
 
 	protected static $_classes = array(
@@ -51,9 +52,14 @@ class FeatureManager extends \lithium\core\StaticObject {
 			self::_filterViews();			
 		}
 
+		if(self::$_config['helperFiltering'] == true){
+			self::_filterHelpers();			
+		}
+
 		if(self::$_config['modelFiltering'] == true){
 			self::_attachFilteredModels();			
 		}
+
 	}
 
 	/**
@@ -103,6 +109,10 @@ class FeatureManager extends \lithium\core\StaticObject {
 
 	/**
 	 * Function to grab all modelFilters from each feature and apply filter to entity
+	 *
+	 * @see li3_waffle\extensions\data\entity\Document::__call()
+	 * @see li3_waffle\extensions\data\entity\Record::__call()
+	 * @see lithium\core\Libraries::instance()
 	 */
 	protected static function _attachFilteredModels(){
 		$params['classes'] = self::$_classes;
@@ -135,7 +145,45 @@ class FeatureManager extends \lithium\core\StaticObject {
 
 
 	/**
+	 * Function to grab all helperFilters from each feature 
+	 * and apply filter Libraries::locate for substition
+	 *
+	 * @see lithium\template\view\Renderer::helper()
+	 * @see lithium\core\Libraries::instance()
+	 * @see lithium\core\Libraries::locate()
+	 */
+	protected static function _filterHelpers(){
+		return static::_filter(__FUNCTION__, array(), function($self, $params) {
+			$filterHelpers = array();
+			$features = $self::enabled();
+			foreach($features as $feature){
+				$filters = $feature->helperFilters();
+				if(!empty($filters)){
+					$filterHelpers += $filters;
+				}
+			}
+			if(!empty($filterHelpers)){
+				Libraries::applyFilter('instance', function($self, $params, $chain) use ($filterHelpers) {
+					if(isset($params['type']) && $params['type'] == 'helper' && isset($params['name'])){
+						if($path = Libraries::locate($params['type'], $params['name'])){
+							if(isset($filterHelpers[$path])){
+								$path = $filterHelpers[$path];
+							}
+							$params['name'] = $path;
+						}
+					}
+					return $chain->next($self, $params, $chain);
+				});
+			}
+		});
+	}
+
+
+	/**
 	 * Function to grab all viewFilters from each feature and apply filter to Renderer adapater to replace views based on feature
+	 *
+	 * @see lithium\core\Libraries::instance()
+	 * @see lithium\template\View::_step()
 	 */
 	protected static function _filterViews(){
 		return static::_filter(__FUNCTION__, array(), function($self, $params) {
